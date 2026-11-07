@@ -1,0 +1,23 @@
+# Dependencias
+node_modules/
+
+# Web generada por Eleventy
+/public/
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Registros de errores
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Archivos temporales del editor
+*.swp
+*.swo
+*~
