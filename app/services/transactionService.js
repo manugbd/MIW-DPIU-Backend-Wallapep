@@ -1,6 +1,5 @@
 const transactionRepository = require('../repositories/transactionRepository')
 const userRepository = require('../repositories/userRepository')
-const productRepository = require('../repositories/productRepository')
 const creditCardRepository = require('../repositories/creditCardRepository')
 const InputError = require('../errors/inputError')
 const LogicError = require('../errors/logicError')
@@ -57,18 +56,12 @@ transactionService = {
 
         if (buyerId == undefined)
             errors.push(new InputError("buyerId", 'buyerId is undefined'));
-        if (productId == undefined)
-            errors.push(new InputError("productId", 'productId is undefined'));
+        if (!Number.isSafeInteger(Number(productId)) || Number(productId) <= 0)
+            errors.push(new InputError("productId", 'Choose a valid product.'));
 
         // Errors in client INPUTS
         if (errors.length > 0)
             throw errors
-
-        let product = await productRepository.getProduct(productId)
-        if (product == null){
-            errors.push(new LogicError('Error when get Product info'));
-            throw errors
-        }
 
         if ( buyerPaymentId != null ) {
             let creditCard = await creditCardRepository.getCreditCard(buyerPaymentId)
@@ -88,35 +81,14 @@ transactionService = {
             throw errors
         }
 
-        let productTransactions = await transactionRepository.getTransactionsByProductId(productId);
-        if (productTransactions == null){
-            errors.push(new LogicError('Error when get the transactions'));
-            throw errors
+        try {
+            return await transactionRepository.purchaseProduct(buyerId, productId, userBuyer, buyerPaymentId);
+        } catch (error) {
+            const purchaseError = new LogicError(error.statusCode
+                ? error.message : 'Could not complete your purchase. Please try again.');
+            purchaseError.code = error.statusCode || 500;
+            throw [purchaseError];
         }
-        if ( productTransactions.length > 0){
-            errors.push(new LogicError('This product already has a transation'));
-            throw errors
-        }
-
-        let transactionInfo = await transactionRepository.addTransaction(
-            buyerId, product.sellerId, userBuyer.country, userBuyer.address, userBuyer.postalCode,
-            productId, product.price, buyerPaymentId
-        );
-
-        let productInfo =await productRepository.editProductBuyer(productId, buyerId)
-        if (productInfo == null){
-            errors.push(new LogicError('Error when update the product'));
-            throw errors
-        }
-
-        if (transactionInfo == null)
-            errors.push(new LogicError('Error when add the transaction'));
-
-        // Errors in the logic of service
-        if (errors.length > 0)
-            throw errors
-
-        return transactionInfo
     },
 }
 module.exports = transactionService

@@ -1,4 +1,8 @@
 const database = require("./database")
+const mysql = require("mysql")
+const { promisify } = require("util")
+
+const purchaseConflict = (message, statusCode = 409) => Object.assign(new Error(message), { statusCode });
 
 transactionRepository = {
     getTransactionPublicBySeller: async (sellerId) => {
@@ -86,20 +90,54 @@ transactionRepository = {
         }
         return transaction
     },
-    addTransaction: async (buyerId, sellerId, buyerCountry, buyerAddress, buyerPostCode, productId, productPrice, buyerPaymentId) => {
-        let insertInfo = null;
-        try{
-            await database.connect();
-            insertInfo = await database.query("INSERT INTO transactions (buyerId, sellerId, buyerCountry, buyerAddress, buyerPostCode, productId, productPrice, buyerPaymentId) VALUES (?,?,?,?,?,?,?,?)",
-                [buyerId, sellerId, buyerCountry, buyerAddress, buyerPostCode, productId, productPrice, buyerPaymentId])
+    purchaseProduct: async (buyerId, productId, buyer, buyerPaymentId) => {
+        // A dedicated connection keeps this purchase isolated from other requests.
+        const connection = mysql.createConnection(database.configuration);
+        const query = promisify(connection.query).bind(connection);
+        const begin = promisify(connection.beginTransaction).bind(connection);
+        const commit = promisify(connection.commit).bind(connection);
+        const rollback = promisify(connection.rollback).bind(connection);
 
-            await database.disconnect();
-        } catch (e){
-            await database.disconnect();
-            console.log(e) // ERROR IN DATABASE OR SQL
+        let started = false;
+        try {
+            await begin();
+            started = true;
+
+            const products = await query("SELECT * FROM products WHERE id = ? FOR UPDATE", [productId]);
+            const product = products[0];
+
+            if (!product) throw purchaseConflict('This product no longer exists.', 404);
+
+            if (String(product.sellerId) === String(buyerId)) throw purchaseConflict('You cannot buy your own product.');
+
+            if (product.buyerId != null) throw purchaseConflict('This product has already been sold.');
+
+            if (product.price == null || !Number.isFinite(Number(product.price)) || Number(product.price) < 0)
+                throw purchaseConflict('This product does not have a valid price.');
+
+            const previous = await query("SELECT id FROM transactions WHERE productId = ?", [productId]);
+
+            if (previous.length) throw purchaseConflict('This product has already been sold.');
+
+            const inserted = await query(
+                "INSERT INTO transactions (buyerId, sellerId, buyerCountry, buyerAddress, buyerPostCode, productId, productPrice, buyerPaymentId, startDate) VALUES (?,?,?,?,?,?,?,?,?)",
+                [buyerId, product.sellerId, buyer.country ?? null, buyer.address ?? null, buyer.postalCode ?? null,
+                    productId, product.price, buyerPaymentId ?? null, Date.now()]
+            );
+
+            const updated = await query("UPDATE products SET buyerId = ? WHERE id = ? AND buyerId IS NULL", [buyerId, productId]);
+
+            if (inserted.affectedRows !== 1 || updated.affectedRows !== 1)
+                throw new Error('Purchase could not be saved.');
+            
+            await commit();
+            return inserted;
+        } catch (error) {
+            if (started) await rollback();
+            throw error;
+        } finally {
+            connection.end();
         }
-
-        return insertInfo
     }
 }
 module.exports = transactionRepository
