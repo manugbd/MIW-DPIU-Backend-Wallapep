@@ -19,8 +19,8 @@ productsService = {
             errors.push(new InputError("title",'title is undefined'));
         if ( title != null && title.length != null && title.length < 5)
             errors.push(new InputError("title",'title is too short'));
-        if ( price == undefined || isNaN(price) )
-            errors.push(new InputError("price",'price is not a number'));
+        if (price == null || price === '' || isNaN(price) || !isFinite(price) || Number(price) < 0)
+            errors.push(new InputError("price", 'Price must be a non-negative number.'));
         // Errors in client INPUTS
         if (errors.length > 0)
             throw errors
@@ -46,8 +46,8 @@ productsService = {
             errors.push(new InputError("title",'title is undefined'));
         if ( title != null && title.length != null && title.length < 5)
             errors.push(new InputError("title",'title is too short'));
-        if ( price == undefined || isNaN(price) )
-            errors.push(new InputError("price",'price is not a number'));
+        if (price == null || price === '' || isNaN(price) || !isFinite(price) || Number(price) < 0)
+            errors.push(new InputError("price", 'Price must be a non-negative number.'));
         // Errors in client INPUTS
         if (errors.length > 0)
             throw errors
