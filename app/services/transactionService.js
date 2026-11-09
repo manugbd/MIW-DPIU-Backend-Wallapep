@@ -51,7 +51,8 @@ transactionService = {
 
         return transactions
     },
-    postTransaction: async (buyerId, productId, buyerPaymentId) => {
+    postTransaction: async (buyerId, productId, buyerPaymentId, details = {}) => {
+        details = require("./checkoutValidation")(details);
         let errors = []
 
         if (buyerId == undefined)
@@ -82,7 +83,7 @@ transactionService = {
         }
 
         try {
-            return await transactionRepository.purchaseProduct(buyerId, productId, userBuyer, buyerPaymentId);
+            return await transactionRepository.purchaseProduct(buyerId, productId, {country:details.country,address:details.address,postalCode:details.postalCode}, buyerPaymentId);
         } catch (error) {
             const purchaseError = new LogicError(error.statusCode
                 ? error.message : 'Could not complete your purchase. Please try again.');

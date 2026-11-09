@@ -8,6 +8,7 @@ usersRouter.post("/",usersController.postUser);
 usersRouter.get("/disconnect", usersController.disconnect);
 usersRouter.post("/disconnect", usersController.disconnect);
 usersRouter.get("/isActiveApiKey", usersController.isActiveApiKey);
+usersRouter.get("/own", require("../middlewares/authenticationMiddleware"), usersController.getOwnUser);
 usersRouter.get("/:id", usersController.getUser);
 
 module.exports = usersRouter

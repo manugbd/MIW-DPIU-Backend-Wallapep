@@ -1,6 +1,19 @@
 const usersService = require('../services/usersService')
 
 usersController = {
+	getOwnUser: async (req,res) => {
+		try {
+			const user=await require('../repositories/userRepository').getUserById(req.infoInApiKey.id);
+
+			if(!user) return res.status(404).json({errors:[{msg:"User not found"}]});
+			
+			return res.json({country:user.country,address:user.address,postalCode:user.postalCode});
+		} catch {
+			return res.status(500).json(
+				{errors:[{msg:"Could not load your address"}]}
+			);
+		}
+	},
 	getUser: async (req, res) => {
 		try {
 			let id = req.params.id

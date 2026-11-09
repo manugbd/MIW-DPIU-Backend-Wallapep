@@ -10,7 +10,7 @@ transactionRepository = {
 
         try{
             await database.connect();
-            transactions = await database.query("SELECT transactions.id, transactions.productId, transactions.buyerId, transactions.sellerId, products.title" +
+            transactions = await database.query("SELECT transactions.id, transactions.productId, transactions.buyerId, transactions.sellerId, transactions.startDate, products.title" +
                 " FROM transactions LEFT JOIN products ON products.id = transactions.productId WHERE transactions.sellerId = ?",[sellerId])
             await database.disconnect();
         } catch (e){
@@ -24,7 +24,7 @@ transactionRepository = {
 
         try{
             await database.connect();
-            transactions = await database.query("SELECT transactions.id, transactions.productId, transactions.buyerId, transactions.sellerId, products.title" +
+            transactions = await database.query("SELECT transactions.id, transactions.productId, transactions.buyerId, transactions.sellerId, transactions.startDate, products.title" +
                 " FROM transactions LEFT JOIN products ON products.id = transactions.productId WHERE transactions.buyerId = ?",[buyerId])
             await database.disconnect();
         } catch (e){

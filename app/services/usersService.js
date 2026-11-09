@@ -116,7 +116,7 @@ usersService = {
 
         let user = await userRepository.getUserById(userId)
         if ( user == null)
-            errors.push(new LogicError('Error when get the user '+id ));
+            errors.push(new LogicError('Error when get the user '+userId ));
 
         // Errors in the logic of service
         if (errors.length > 0)
@@ -126,9 +126,9 @@ usersService = {
         let userDAO = {
             id: user.id,
             name: user.name,
-            email:user.email,
-            country:user.country,
-            postalCode: user.postalCode
+            surname: user.surname,
+            email: user.email,
+            country: user.country
         }
         return userDAO
     },
